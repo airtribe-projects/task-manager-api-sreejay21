@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const tasks = require("../data/task");
+const { VALID_PRIORITIES } = require("../data/config/constants");
 
 router.get('/', (req, res) => {
   const { completed, sortBy, order } = req.query;
@@ -27,8 +28,7 @@ router.get('/', (req, res) => {
 
 router.get("/priority/:level", (req, res) => {
   const { level } = req.params;
-  const validPriorities = ['low', 'medium', 'high'];
-  if (!validPriorities.includes(level.toLowerCase())) {
+  if (!VALID_PRIORITIES.includes(level.toLowerCase())) {
     return res.status(400).send("Invalid priority level. Use 'low', 'medium', or 'high'.");
   }
 
@@ -46,13 +46,12 @@ router.get("/:id", (req, res) => {
 
 router.post("/", (req, res) => {
   const { title, description, completed, priority } = req.body;
-  const validPriorities = ['low', 'medium', 'high'];
 
   if (!title || !description) {
     return res.status(400).send("Title and description are required.");
   }
 
-  if (priority && !validPriorities.includes(priority.toLowerCase())) {
+  if (priority && !VALID_PRIORITIES.includes(priority.toLowerCase())) {
     return res.status(400).send("Priority must be 'low', 'medium', or 'high'.");
   }
 
@@ -72,7 +71,6 @@ router.post("/", (req, res) => {
 router.put("/:id", (req, res) => {
   const taskId = parseInt(req.params.id);
   const { title, description, completed, priority } = req.body;
-  const validPriorities = ['low', 'medium', 'high'];
 
   const task = tasks.find((t) => t.id === taskId);
   if (!task) return res.status(404).send("Task not found.");
@@ -81,7 +79,7 @@ router.put("/:id", (req, res) => {
     return res.status(400).send("Title, description, and boolean 'completed' are required.");
   }
 
-  if (priority && !validPriorities.includes(priority.toLowerCase())) {
+  if (priority && !VALID_PRIORITIES.includes(priority.toLowerCase())) {
     return res.status(400).send("Priority must be 'low', 'medium', or 'high'.");
   }
 
@@ -96,10 +94,19 @@ router.put("/:id", (req, res) => {
 
 router.delete("/:id", (req, res) => {
   const taskId = parseInt(req.params.id);
+   if (isNaN(taskId)) {
+    return res.status(400).json({ error: "Invalid task ID. ID must be a number." });
+  }
+
   const index = tasks.findIndex((t) => t.id === taskId);
-  if (index === -1) return res.status(404).send("Task not found.");
+
+  if (index === -1) {
+    return res.status(404).json({ error: "Task not found." });
+  }
+
   const deleted = tasks.splice(index, 1);
   res.json(deleted[0]);
 });
+
 
 module.exports = router;
